@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Plan{% endblock %}
+{% block head %}
+    {{ super() }}
+	<link rel="stylesheet" href="/static/recipes.css" type="text/css" />
+{% endblock %}
+{% block body %}
+	{% for recipe_name, recipe_ingredients in recipe_ingredients.items() %}
+		{% include 'recipe_card.html' %}
+	{% endfor %}
+{% endblock %}

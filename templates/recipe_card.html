@@ -1,0 +1,18 @@
+<form method="POST" action="/app/add_recipe">
+	<div class="card m-1" style="width: 24rem;">
+		<h5 class="card-header">{{recipe_name}}</h5>
+		<ul class="list-group list-group-flush">
+			{% for ingredient in recipe_ingredients %}
+				<li class="list-group-item">{{ingredient['quantity']}} {{(ingredient['unit'] ~ (' ' if ingredient['unit'] != '') ~ ingredient['name']) | pluralize(ingredient['quantity']) }}</li>
+			{% endfor %}
+		</ul>
+		<div class="card-body">
+			<div class="input-group w-50 mb-3">
+				<input name="servings" type="text" class="form-control" value="{{(recipe_name | recipeByName)['recipe_servings']}}">
+				<span class="input-group-text">Servings</span>
+			</div>
+			<input type="hidden" name="recipe_id" value="{{(recipe_name | recipeByName)['recipe_id']}}">
+			<input type="submit" value="{{'Add to Plan' if recipe_name not in user_recipe_names else 'Update Plan'}}" class="btn btn-primary">
+		</div>
+	</div>
+</form>

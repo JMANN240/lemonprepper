@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block body %}
+<form method="POST">
+	<div class="card m-1" style="width: 24rem;">
+		<h5 class="card-header">Register</h5>
+		<div class="card-body">
+			<input type="text" name="username" class="form-control mb-2" placeholder="Username" required/>
+			<input type="password" name="password" class="form-control mb-2" placeholder="Password" required/>
+			<input type="password" name="confirm_password" class="form-control mb-2" placeholder="Confirm Password" required/>
+			<input type="submit" value="Register" class="btn btn-primary">
+		</div>
+	</div>
+</form>
+
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block body %}
+<form method="POST">
+	<div class="card m-1" style="width: 24rem;">
+		<h5 class="card-header">Login</h5>
+		<div class="card-body">
+			<input type="text" name="username" class="form-control mb-2" placeholder="Username" required/>
+			<input type="password" name="password" class="form-control mb-2" placeholder="Password" required/>
+			<input type="submit" value="Login" class="btn btn-primary">
+		</div>
+	</div>
+</form>
+
+{% endblock %}

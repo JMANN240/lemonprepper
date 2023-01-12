@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Counts{% endblock %}
+{% block body %}
+<div class="card m-1" style="width: 24rem;">
+	<h5 class="card-header">?</h5>
+	<div class="card-body">
+		<table class="table">
+			<thead>
+				<tr>
+					<th scope="col"></th>
+					<th scope="col">Total</th>
+					{% for location in locations %}
+						<th scope="col">{{location['location_name']}}</th>
+					{% endfor %}
+				</tr>
+			</thead>
+			<tbody>
+				{% for item in items %}
+					<tr>
+						<th>{{item['item_name']}}</th>
+						{% if total_item_counts[item['item_id']] is not none %}
+							<td>{{total_item_counts[item['item_id']]}}</td>
+						{% else %}
+							<td>0</td>
+						{% endif %}
+						{% for location in locations %}
+							{% if location_item_counts[item['item_id']][location['location_id']] is not none %}
+								<td>{{location_item_counts[item['item_id']][location['location_id']]}}</td>
+							{% else %}
+								<td>0</td>
+							{% endif %}
+						{% endfor %}
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+</div>
+
+{% endblock %}

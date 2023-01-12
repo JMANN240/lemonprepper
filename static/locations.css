@@ -1,0 +1,114 @@
+.scale-card {
+	display: grid;
+	grid-template-rows: repeat(3, 1fr);
+	grid-template-columns: repeat(3, 1fr);
+	grid-template-areas:
+		"icon location location"
+		"icon item item"
+		"id weight details";
+	border: 2px solid var(--al);
+	border-radius: 2em;
+	margin: 1em;
+}
+
+.scale-card * {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+@media (orientation: landscape) {
+	.scale-card {
+		width: 30vw;
+		height: 15vw;
+		font-size: 1vw;
+	}
+
+	.scale-card * {
+		padding: 1vw;
+	}
+
+	.scale-icon {
+		font-size: 8vw
+	}
+
+	.scale-details-button {
+		font-size: 1vw;
+		padding: 1vw;
+	}
+}
+
+@media (orientation: portrait) {
+	.scale-card {
+		width: 90vw;
+		height: 45vw;
+		font-size: 3vw;
+	}
+
+	.scale-card * {
+		padding: 3vw;
+	}
+
+	.scale-icon {
+		font-size: 24vw;
+	}
+
+	.scale-details-button {
+		font-size: 3vw;
+		padding: 3vw;
+	}
+}
+
+.scale-icon {
+	grid-area: icon;
+	border-right: 1px solid var(--al);
+	border-bottom: 1px solid var(--al);
+}
+
+.scale-id {
+	grid-area: id;
+	color: var(--mg);
+	border-top: 1px solid var(--al);
+	border-right: 1px solid var(--al);
+}
+
+.scale-location {
+	grid-area: location;
+	justify-content: flex-start;
+	border-left: 1px solid var(--al);
+	border-bottom: 1px solid var(--al);
+}
+
+.scale-item {
+	grid-area: item;
+	justify-content: flex-start;
+	border-top: 1px solid var(--al);
+	border-left: 1px solid var(--al);
+	border-bottom: 1px solid var(--al);
+}
+
+.scale-weight {
+	grid-area: weight;
+	justify-content: flex-start;
+	border-left: 1px solid var(--al);
+	border-top: 1px solid var(--al);
+	border-right: 1px solid var(--al);
+}
+
+.scale-details {
+	grid-area: details;
+	justify-content: center;
+	border-left: 1px solid var(--al);
+	border-top: 1px solid var(--al);
+}
+
+.scale-details a {
+	padding: 0;
+}
+
+.scale-details-button {
+	border: 1px solid var(--ad);
+	border-radius: 1em;
+	background-color: var(--am);
+	color: var(--bg);
+}

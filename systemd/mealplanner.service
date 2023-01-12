@@ -1,0 +1,14 @@
+[Unit]
+Description=Meal Planner
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/root/mealplanner
+LimitNOFILE=4096
+ExecStart=/root/mealplanner/env/bin/uvicorn main:app --uds /tmp/mealplanner.sock
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
