@@ -4,9 +4,9 @@ After=network.target
 
 [Service]
 User=root
-WorkingDirectory=/root/mealplanner
+WorkingDirectory=/root/lemonprepper
 LimitNOFILE=4096
-ExecStart=/root/mealplanner/env/bin/uvicorn main:app --uds /tmp/mealplanner.sock
+ExecStart=/root/lemonprepper/env/bin/uvicorn main:app --uds /tmp/lemonprepper.sock
 Restart=on-failure
 RestartSec=5s
 

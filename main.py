@@ -1,9 +1,10 @@
 import sqlite3
 import starlette.status as status
-from fastapi import FastAPI, Request, Form, Response, Cookie, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request, Form, Response, Cookie, Depends, Header, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from util import *
 from config import *
 from hashlib import sha512
@@ -11,21 +12,22 @@ from sqlalchemy.orm import Session
 import os
 import crud, schemas
 from database import SessionLocal
-import time
+from pydantic import BaseModel
 
-main = FastAPI()
 app = FastAPI()
-api = FastAPI()
 
-main.mount('/app', app, name='app')
-main.mount('/static', StaticFiles(directory='static'), name='static')
+origins = [
+	"http://localhost:8000",
+	"http://localhost:3000"
+]
 
-app.mount('/api', api, name='api')
-
-templates = Jinja2Templates(directory='templates')
-
-templates.env.filters["pluralize"] = pluralize
-templates.env.filters["recipeByName"] = getRecipeByRecipeName
+app.add_middleware(
+	CORSMiddleware,
+	allow_origins=origins,
+	allow_credentials=True,
+	allow_methods=["*"],
+	allow_headers=["*"]
+)
 
 def get_db():
 	db = SessionLocal()
@@ -34,137 +36,82 @@ def get_db():
 	finally:
 		db.close()
 
-@main.get('/', response_class=HTMLResponse)
-async def index(request: Request, db: Session = Depends(get_db)):
-	user = getUserFromRequest(request)
-	return templates.TemplateResponse('index.html', {
-		'request': request,
-		'user': user
-	})
+class Payload(BaseModel):
+	username: str
 
-@app.get('/', response_class=HTMLResponse)
-async def counts(request: Request):
-	user = getUserFromRequest(request)
-	if user is None:
-		return RedirectResponse("/app/login", status_code=status.HTTP_302_FOUND)
-	return templates.TemplateResponse('app.html', {
-		'request': request
-	})
+def authorization(Authorization: str = Header()):
+	CredentialsException = HTTPException(
+		status_code=status.HTTP_401_UNAUTHORIZED,
+		detail="Could not validate credentials",
+	)
 
-@app.get('/login', response_class=HTMLResponse)
-async def login_get(request: Request):
-	user = getUserFromRequest(request)
-	return templates.TemplateResponse('login.html', {
-		'request': request,
-		'user': user
-	})
+	bearer_token = Authorization.split(' ')
 
-@app.post('/login')
-async def login_post(request: Request, response: Response, username: str = Form(), password: str = Form()):
-	user = getUserByUsername(username)
-	if user is None:
-		return templates.TemplateResponse('login.html', {
-			'request': request,
-			'messages': [
-				{
-					'text': 'User not found!',
-					'class': 'alert alert-danger'
-				}
-			]
-		})
-	h = sha512()
-	h.update(password.encode('utf-8') + SECRET_KEY)
-	d = h.hexdigest()
-	if (d != user['passhash']):
-		return templates.TemplateResponse('login.html', {
-			'request': request,
-			'messages': [
-				{
-					'text': 'Incorrect password!',
-					'class': 'alert alert-danger'
-				}
-			]
-		})
-	else:
-		session_id = os.urandom(32)
-		cookie_max_age = 24*60*60
-		res = RedirectResponse("/app", status_code=status.HTTP_302_FOUND)
-		res.set_cookie(key="session_id", value=session_id.hex(), max_age=cookie_max_age)
-		fetch("UPDATE users SET session_id=:session_id, session_expiry=:session_expiry WHERE username=:username", {'session_id': session_id.hex(), 'session_expiry': time.time() + cookie_max_age, 'username': username})
-		return res
+	if len(bearer_token) < 2:
+		raise CredentialsException
 
-@app.get('/register', response_class=HTMLResponse)
-async def register_get(request: Request):
-	user = getUserFromRequest(request)
-	return templates.TemplateResponse('register.html', {
-		'request': request,
-		'user': user
-	})
+	token = bearer_token[1]
 
-@app.post('/register')
-async def register_post(request: Request, response: Response, username: str = Form(), password: str = Form(), confirm_password: str = Form()):
-	messages = []
-	user = getUserByUsername(username)
-	if user is not None:
-		messages.append({
-			'text': 'Username already taken!',
-			'class': 'alert alert-danger'
-		})
-	if password != confirm_password:
-		messages.append({
-			'text': 'Passwords do not match!',
-			'class': 'alert alert-danger'
-		})
-	if len(messages) > 0:
-		return templates.TemplateResponse('register.html', {
-			'request': request,
-			'messages': messages
-		})
-	h = sha512()
-	h.update(password.encode('utf-8') + SECRET_KEY)
-	d = h.hexdigest()
-	fetch(f'INSERT INTO users (username, passhash) VALUES ("admin", "{d}");')
-	session_id = os.urandom(32)
-	cookie_max_age = 24*60*60
-	response.set_cookie(key="session_id", value=session_id.hex(), max_age=cookie_max_age)
-	fetch("UPDATE users SET session_id=:session_id, session_expiry=:session_expiry WHERE username=:username", {'session_id': session_id.hex(), 'session_expiry': time.time() + cookie_max_age, 'username': username})
-	return RedirectResponse("/", status_code=status.HTTP_302_FOUND)
+	try:
+		payload = jwt.decode(token, SECRET_KEY, algorithms="HS256")
+	except:
+		raise CredentialsException
 
-@app.get('/logout')
-async def logout_get(request: Request, response: Response):
-	session_id = request.cookies.get("session_id")
-	if session_id is not None:
-		response.set_cookie(key="session_id", value=None)
-		fetch("UPDATE users SET session_id=NULL, session_expiry=NULL where session_id=:session_id", {'session_id': session_id})
-	return RedirectResponse("/app", status_code=status.HTTP_302_FOUND)
+	return payload
 
-@app.get('/recipes', response_class=HTMLResponse)
-async def recipes(request: Request):
-	return templates.TemplateResponse('recipes.html', {
-		'request': request
-	})
+@app.post('/register', response_model=schemas.JWT)
+def register(register: schemas.Register, db: Session = Depends(get_db)):
+	try:
+		user = crud.create_user(db, register)
+	except ValueError as e:
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail=e.args[0]
+		)
+	accessToken = generate_jwt(user.username)
+	return {
+		'accessToken': accessToken
+	}
 
-@app.get('/plan', response_class=HTMLResponse)
-async def plan(request: Request):
-	user = getUserFromRequest(request)
-	if user is None:
-		return RedirectResponse("/app/login", status_code=status.HTTP_302_FOUND)
-	user_plan_recipes = getUserPlanRecipesByUserId(user['user_id'])
-	recipe_ingredients = {recipe['recipe_name']: getRecipeIngredients(recipe['recipe_id']) for recipe in user_plan_recipes}
+@app.post('/login', response_model=schemas.JWT)
+def login(login: schemas.Login, db: Session = Depends(get_db)):
+	try:
+		user = crud.get_user(db, login)
+	except ValueError as e:
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail=e.args[0]
+		)
+	accessToken = generate_jwt(user.username)
+	return {
+		'accessToken': accessToken
+	}
 
-	return templates.TemplateResponse('recipes.html', {
-		'request': request,
-		'recipe_ingredients': recipe_ingredients,
-		'user_recipe_names': [recipe['recipe_name'] for recipe in getUserPlanRecipesByUserId(user['user_id'])],
-		'user': user
-	})
-
-
-
-@api.get('/recipes/', response_model=list[schemas.RecipeRead])
-def get_recipes(db: Session = Depends(get_db)):
+@app.get('/recipes/', response_model=list[schemas.RecipeRead])
+def get_recipes(db: Session = Depends(get_db), payload: Payload = Depends(authorization)):
 	recipes = crud.get_recipes(db)
-	for recipe in recipes:
-		for ingredient in recipe.ingredients:
-			print(ingredient.ingredient_name)
 	return recipes
+
+@app.post('/recipes/', response_model=schemas.RecipeRead)
+def post_recipe(recipe: schemas.RecipeCreate, db: Session = Depends(get_db), payload: Payload = Depends(authorization)):
+	recipe = crud.create_recipe(db, recipe)
+	return recipe
+
+@app.get('/ingredients/', response_model=list[schemas.IngredientRead])
+def get_ingredients(db: Session = Depends(get_db), payload: Payload = Depends(authorization)):
+	ingredients = crud.get_ingredients(db)
+	return ingredients
+
+@app.get('/units/', response_model=list[schemas.UnitRead])
+def get_units(db: Session = Depends(get_db), payload: Payload = Depends(authorization)):
+	units = crud.get_units(db)
+	return units
+
+@app.get('/units/{dimension_name}', response_model=list[schemas.UnitRead])
+def get_units_by_dimension_name(dimension_name: str, db: Session = Depends(get_db), payload: Payload = Depends(authorization)):
+	units = crud.get_units_by_dimension_name(db, dimension_name)
+	return units
+
+@app.get('/auth')
+def get_auth(payload: Payload = Depends(authorization)):
+	return Response(status_code=200)

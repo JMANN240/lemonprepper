@@ -31,7 +31,7 @@ class RecipeBase(BaseModel):
 	servings: float
 
 class RecipeCreate(RecipeBase):
-	pass
+	ingredients: list[RecipeIngredientCreate]
 
 class Recipe(RecipeBase):
 	pass
@@ -122,7 +122,7 @@ class RecipeRead(Recipe):
 class IngredientRead(Ingredient):
 	dimension: Dimension
 	preferred_unit: Unit
-	recipes: list[Recipe]
+	recipes: list[RecipeIngredientRead]
 
 	class Config:
 		orm_mode = True
@@ -148,3 +148,16 @@ class DimensionRead(Dimension):
 
 	class Config:
 		orm_mode = True
+
+
+
+# Route-specific Schemas
+class Login(BaseModel):
+	username: str
+	password: str
+
+class Register(Login):
+	confirm_password: str
+
+class JWT(BaseModel):
+	accessToken: str

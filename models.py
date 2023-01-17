@@ -72,3 +72,9 @@ class UnitConversion(Base):
 
 	from_unit = relationship("Unit", back_populates="from_conversions", foreign_keys=[from_unit_name])
 	to_unit = relationship("Unit", back_populates="to_conversions", foreign_keys=[to_unit_name])
+
+class User(Base):
+	__tablename__ = "users"
+
+	username = Column(String, unique=True, primary_key=True)
+	passhash = Column(String, primary_key=True)
